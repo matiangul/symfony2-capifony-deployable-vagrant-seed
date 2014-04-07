@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+ <property name="source" value="src"/>
+ <target name="clear">
+   <echo>--------------------------------------------</echo>
+   <echo>--------------------------------------------</echo>
+   <echo>--------------------------------------------</echo>
+   <echo>-------------B u i l d----------------------</echo>
+   <echo>--------------------------------------------</echo>
+   <echo>--------------------------------------------</echo>
+   <echo>--------------------------------------------</echo>
+   <echo>--------------------------------------------</echo>
+ </target>
+
+    <!-- PERMISSIONS -->
+    <target name="permissions" description="Set up file permissions">
+        <delete dir="${basedir}/app/cache/behat"/>
+        <mkdir dir="${basedir}/app/cache/behat"/>
+        <echo>Setting up file permissions (www user and current user)</echo>
+        <exec executable="/bin/bash" dir="${basedir}" failonerror="true">
+            <arg line="setFilePermissions.sh" />
+        </exec>
+        <exec executable="/bin/bash" dir="${basedir}" failonerror="true">
+            <arg line="setFilePermissions.sh apache" />
+        </exec>
+        <exec executable="/bin/bash" dir="${basedir}" failonerror="true">
+            <arg line="setFilePermissions.sh www-data" />
+        </exec>
+    </target>
+    <!-- END: PERMISSIONS -->
+
+ <target name="copyGitHooks" description="Copy git hooks that can be used before commit (style checking etc.)">
+   <echo>Copy git hooks that can be used before commit (style checking etc.)</echo>
+  <copy file="app/scripts/hooks/pre-commit" tofile=".git/hooks/pre-commit"/>
+  <chmod file=".git/hooks/pre-commit" perm="+x"/>
+  <chmod file="app/scripts/hooks/pre-commit" perm="+x"/>
+ </target>
+
+ <target name="prepareconfig" description="Prepares parameters from dist versions if not exists">
+  <copy file="app/config/parameters.behat.yml" tofile="app/config/parameters.behat.yml.back" overwrite="false"/>
+  <copy file="app/config/parameters.behat.yml.dist" tofile="app/config/parameters.behat.yml" overwrite="false"/>
+  <copy file="app/config/parameters.yml" tofile="app/config/parameters.yml.back" overwrite="false"/>
+  <copy file="app/config/parameters.yml.dist" tofile="app/config/parameters.yml" overwrite="false"/>
+ </target>
+
+ <target name="composerget.check">
+    <available file="composer.phar" property="composerget.present"/>
+ </target>
+ <target name="composerget" depends="composerget.check" unless="composerget.present" description="Composer installation">
+    <exec executable="/bin/bash">
+        <arg value="-c" />
+        <arg value="curl -s https://getcomposer.org/installer | php" />
+    </exec>
+ </target>
+
+ <target name="installvendors" description="Composer update dependencies">
+    <exec executable="/usr/bin/php">
+        <arg value="composer.phar" />
+        <arg value="install" />
+    </exec>
+ </target>
+ <target name="installvendors-dev" description="Composer update dependencies with require-dev">
+    <exec executable="/usr/bin/php">
+        <arg value="composer.phar" />
+        <arg value="install" />
+        <arg value="--dev" />
+    </exec>
+ </target>
+
+
+ <target name="cache-clear" description="Clears cache">
+  <exec executable="php" dir="${basedir}" failonerror="true">
+    <arg line="app/console cache:clear --env=dev" />
+  </exec>
+  <exec executable="php" dir="${basedir}" failonerror="true">
+    <arg line="app/console cache:clear --env=test" />
+  </exec>
+  <exec executable="php" dir="${basedir}" failonerror="true">
+    <arg line="app/console cache:clear --env=prod --no-debug" />
+  </exec>
+ </target>
+
+ <target name="assets" description="Install assets">
+  <exec executable="php" dir="${basedir}" failonerror="true">
+    <arg line="app/console assets:install --symlink web" />
+  </exec>
+  <exec executable="php" dir="${basedir}" failonerror="true">
+    <arg line="app/console assetic:dump --env=prod --no-debug" />
+  </exec>
+ </target>
+
+ <target name="clean" description="Clean up and create artifact directories">
+  <delete dir="${basedir}/build/api"/>
+  <delete dir="${basedir}/build/code-browser"/>
+  <delete dir="${basedir}/build/coverage"/>
+  <delete dir="${basedir}/build/logs"/>
+  <delete dir="${basedir}/build/pdepend"/>
+  <delete dir="${basedir}/build/behat"/>
+
+  <mkdir dir="${basedir}/build/api"/>
+  <mkdir dir="${basedir}/build/code-browser"/>
+  <mkdir dir="${basedir}/build/coverage"/>
+  <mkdir dir="${basedir}/build/logs"/>
+  <mkdir dir="${basedir}/build/pdepend"/>
+  <mkdir dir="${basedir}/build/behat"/>
+ </target>
+
+ <!-- NODE LESS -->
+ <target name="node_modules-dir-check">
+  <condition property="node_modules-dir-exists">
+   <available file="${basedir}/node_modules" type="dir"/>
+  </condition>
+ </target>
+
+ <target name="node_modules-install" description="Installs node_modules" depends="node_modules-dir-check" unless="node_modules-dir-exists">
+  <exec executable="npm" dir="${basedir}" failonerror="true">
+    <arg line="install less" />
+  </exec>
+  <exec executable="npm" dir="${basedir}" failonerror="true">
+    <arg line="install karma@0.8.5" />
+  </exec>
+ </target>
+
+
+ <target name="phpunit-with-coverage" description="Run unit tests using PHPUnit and generates junit.xml and clover.xml">
+  <exec dir="${basedir}/app" executable="${basedir}/vendor/bin/phpunit" failonerror="true">
+    <arg line="-d zend.enable_gc=0 --configuration phpunitCoverage.xml.dist" />
+  </exec>
+ </target>
+
+ <target name="phpunit" description="Run unit tests using PHPUnit and generates junit.xml and clover.xml">
+  <exec dir="${basedir}/app" executable="${basedir}/vendor/bin/phpunit" failonerror="true">
+    <arg line="--configuration phpunit.xml.dist" />
+  </exec>
+ </target>
+
+  <target name="behat" description="Run behat tests">
+  <exec executable="${basedir}/t" dir="${basedir}" failonerror="true">
+    <arg line="behat --tags ~@wip" />
+  </exec>
+ </target>
+
+ <target name="behat-ac" description="Run behat tests">
+  <exec executable="bin/behat" dir="${basedir}" failonerror="false">
+    <arg line="@NeducatioCommonBundle --profile ac --tags ~@wip --out build/behat/NeducatioCommonBundle.html" />
+  </exec>
+  <exec executable="bin/behat" dir="${basedir}" failonerror="false">
+    <arg line="@NeducatioCourseBuilderLandingBundle --profile ac --tags ~@wip --out build/behat/NeducatioCourseBuilderLandingBundle.html" />
+  </exec>
+  <exec executable="bin/behat" dir="${basedir}" failonerror="false">
+    <arg line="@NeducatioCourseBuilderCourseBundle --profile ac --tags ~@wip --out build/behat/NeducatioCourseBuilderCourseBundle.html" />
+  </exec>
+  <exec executable="bin/behat" dir="${basedir}" failonerror="false">
+    <arg line="@NeducatioUserBundle --profile ac --tags ~@wip --out build/behat/NeducatioUserBundle.html" />
+  </exec>
+ </target>
+
+ <target name="migration" description="Production database migration">
+  <exec executable="app/console" dir="${basedir}" failonerror="true">
+    <arg line="doctrine:migrations:migrate --no-interaction --env=prod" />
+  </exec>
+  <exec executable="app/console" dir="${basedir}" failonerror="true">
+    <arg line="doctrine:migrations:migrate --no-interaction --env=dev" />
+  </exec>
+  <exec executable="app/console" dir="${basedir}" failonerror="true">
+    <arg line="doctrine:migrations:migrate --no-interaction --env=test" />
+  </exec>
+ </target>
+
+
+
+ <!-- METRICS -->
+
+ <target name="sonar" description="Run sonar">
+  <exec executable="sh" dir="${basedir}" failonerror="true">
+    <arg line="sonar.sh" />
+  </exec>
+ </target>
+
+ <!-- SYMLINKS -->
+ <target name="testjs.preparesymlinks" description="Prepare symlinks for testing js using grunt and browser">
+  <echo>Creating symlinks to js source files from test directory</echo>
+  <mkdir dir="${basedir}/tests"/>
+  <!-- app -->
+  <mkdir    dir="${basedir}/tests/app/Resources/public"/>
+  <symlink link="${basedir}/tests/app/Resources/public/js" resource="${basedir}/app/Resources/public/js" overwrite="true"/>
+  <!-- Neducatio/Content/ExerciseBundle -->
+  <mkdir    dir="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Resources/public"/>
+  <symlink link="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Resources/public/js"       resource="${basedir}/src/Neducatio/Content/ExerciseBundle/Resources/public/js" overwrite="true"/>
+  <mkdir    dir="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Tests/Resources/public"/>
+  <symlink link="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Tests/Resources/public/js" resource="${basedir}/src/Neducatio/Content/ExerciseBundle/Tests/Resources/public/js" overwrite="true"/>
+ </target>
+
+ <target name="testjs.destroysymlinks" description="Destroy symlinks for security reasons">
+  <echo>Celaning symlinks to js source files</echo>
+  <symlink action="delete" link="${basedir}/tests/app/Resources/public/js"/>
+  <symlink action="delete" link="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Resources/public/js"/>
+  <symlink action="delete" link="${basedir}/tests/src/Neducatio/Content/ExerciseBundle/Tests/Resources/public/js"/>
+ </target>
+
+ <target name="testjs" description="Run karma tests">
+  <exec executable="${basedir}/karma" dir="${basedir}" failonerror="true">
+    <arg line="start --single-run" />
+  </exec>
+ </target>
+ <!-- =================== -->
+
+ <!-- Synchronize files -->
+ <target name="sync" description="Synchronize dev files to local">
+   <exec executable="rsync" dir="${basedir}" failonerror="true">
+     <arg line="-rtvau --delete /home/vagrant/www/cb/ /vagrant/cb/ --exclude-from app/config/rsync_exclude.txt" />
+   </exec>
+ </target>
+
+ <target name="syncAll" description="Synchronize all dev files (with vendors) to local">
+   <exec executable="rsync" dir="${basedir}" failonerror="true">
+     <arg line="-rtvau --delete /home/vagrant/www/cb/ /vagrant/cb/ --exclude-from app/config/rsync_all_exclude.txt" />
+   </exec>
+ </target>
+
+</project>

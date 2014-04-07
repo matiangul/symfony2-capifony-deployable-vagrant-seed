@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="cb" default="install" basedir=".">
+ <import file="app/buildTargets.xml" />
+
+ <!-- <target name="ci" description="Build whole application for jenkins" depends="install-dev, tests, metrics">
+   <echo>CI server full</echo>
+ </target>
+
+ <target name="ci-fast" description="Build whole application for jenkins" depends="install-dev, tests">
+   <echo>CI server</echo>
+ </target> -->
+
+ <!-- <target name="install" description="Must be run once after checkout and parameters configuration" depends="clear,permissions,copyGitHooks,composerget,installvendors,node_modules-install,migration,refresh"/> -->
+
+ <target name="install" description="Must be run once after checkout and parameters configuration" depends="clear,permissions,composerget,installvendors,node_modules-install,refresh"/>
+
+ <target name="install-dev" description="Must be run once after checkout and parameters configuration" depends="install,installvendors-dev"/>
+
+ <target name="refresh" description="Must be run every time production environment is changed" depends="cache-clear,assets,clean"/>
+
+ <!-- <target name="tests" description="Run tests" depends="phpunit, testjs, behat"/>
+ <target name="metrics" description="Run tests" depends="phpunit-with-coverage, sonar, behat-ac"/> -->
+</project>
