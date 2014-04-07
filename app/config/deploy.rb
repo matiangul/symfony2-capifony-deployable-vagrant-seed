@@ -1,22 +1,22 @@
 # Deployment server info
 set :application, "DSPT"
-set :domain,      "n-educatio"
-set :deploy_to,   "/mangulski/www/test/dspt"
+set :domain,      "192.168.103.55"
+set :deploy_to,   "/home/mangulski/www/test/dspt"
 set :app_path,    "app"
 set :web_path, 	  "web"
 set :maintenance_basename, 	"maintenance"
  
 # SCM info
-set :repository,  "GIT REMOTE REPO URL"
+set :repository,  "git@github.com:mangulski-neducatio/dspt-test.git"
 set :scm,         :git
-set :deploy_via,  :remote_cache
+# set :deploy_via,  :remote_cache
  
 set :model_manager, "doctrine"
  
 # Role info. I don't think this is particularly important for Capifony...
-role :web,        domain                         # Your HTTP server, Apache/etc
-role :app,        domain                         # This may be the same as your `Web` server
-role :db,         domain, :primary => true       # This is where Symfony2 migrations will run
+role :web,        "192.168.103.55"                         # Your HTTP server, Apache/etc
+role :app,        "192.168.103.55"                         # This may be the same as your `Web` server
+role :db,         "192.168.103.55", :primary => true       # This is where Symfony2 migrations will run
  
 # General config stuff
 set :keep_releases,  10
@@ -40,18 +40,20 @@ ssh_options[:keys] = [File.join(ENV["HOME"], ".ssh", ".ssh_key.pub")]
  
  
 # Uncomment this if you need more verbose output from Capifony
-#logger.level = Logger::MAX_LEVEL
+logger.level = Logger::MAX_LEVEL
  
 # Run migrations before warming the cache
-before "symfony:cache:warmup", "symfony:doctrine:migrations:migrate"
+# before "symfony:cache:warmup", "symfony:doctrine:migrations:migrate"
  
 # Custom(ised) tasks
-namespace :deploy do
+ namespace :deploy do
 	# Apache needs to be restarted to make sure that the APC cache is cleared.
 	# This overwrites the :restart task in the parent config which is empty.
 	desc "Restart Apache"
 	task :restart, :except => { :no_release => true }, :roles => :app do
-		run "sudo service apache2 restart"
-		puts "--> Apache successfully restarted".green
+#		run "sudo service apache2 restart"
+#		puts "--> Apache successfully restarted".green
+		run "ant install-dev"
+		puts "new version deployed".green
 	end
-end
+ end
