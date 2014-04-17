@@ -1,59 +1,51 @@
 # Deployment server info
-set :application, "DSPT"
-set :domain,      "192.168.103.55"
-set :deploy_to,   "/home/mangulski/www/test/dspt"
-set :app_path,    "app"
-set :web_path, 	  "web"
-set :maintenance_basename, 	"maintenance"
- 
+set :application,          "APP_NAME"
+set :domain,               "PRODUCTION_SERVER_IP"
+set :deploy_to,            "ABSOLUTE_PATH_ON_SERVER"
+set :app_path,             "app"
+set :web_path, 	           "web"
+set :model_manager,        "doctrine"
+set :maintenance_basename, "maintenance"
+
 # SCM info
-set :repository,  "git@github.com:mangulski-neducatio/dspt-test.git"
-set :scm,         :git
-# set :deploy_via,  :remote_cache
- 
-set :model_manager, "doctrine"
- 
-# Role info. I don't think this is particularly important for Capifony...
-role :web,        "192.168.103.55"                         # Your HTTP server, Apache/etc
-role :app,        "192.168.103.55"                         # This may be the same as your `Web` server
-role :db,         "192.168.103.55", :primary => true       # This is where Symfony2 migrations will run
+set :repository,  "CLONE_URL_TO_REPOSITORY"
+set :scm,         :git # the best scm system ever
+set :branch,      "BRANCH_NAME"
+# set :deploy_via,  :remote_cache # it doesnt clone everything every time is deployed
+
+# more instructions on https://help.github.com/articles/deploying-with-capistrano
+
+role :web,        "PRODUCTION_SERVER_IP"                         # Your HTTP server, Apache/etc
+role :app,        "PRODUCTION_SERVER_IP"                         # This may be the same as your `Web` server
+role :db,         "PRODUCTION_SERVER_IP", :primary => true       # This is where Symfony2 migrations will run
  
 # General config stuff
-set :keep_releases,  10
+set :keep_releases,     10
 set :shared_files,      ["app/config/parameters.yml"] # This stops us from having to recreate the parameters file on every deploy.
 set :shared_children,   [app_path + "/logs", web_path + "/uploads", "vendor"]
 set :permission_method, :acl
-set :use_composer, true
- 
+set :use_composer,      true
+
 # Confirmations will not be requested from the command line.
-set :interactive_mode, false
- 
-# The following line tells Capifony to deploy the last Git tag.
-# Since Jenkins creates and pushes a tag following a successful build this should always be the last tested version of the code.
-set :branch, "master"
- 
+set :interactive_mode,  true
+
 # User details for the production server
-set :user, "mangulski"
+set :user, "USERNAME"
 set :use_sudo, false
 ssh_options[:forward_agent] = true
-ssh_options[:keys] = [File.join(ENV["HOME"], ".ssh", ".ssh_key.pub")]
- 
- 
+ssh_options[:keys] = [File.join(ENV["HOME"], ".ssh", "id_rsa_USERNAME")] # private key created in installation instruction
+
 # Uncomment this if you need more verbose output from Capifony
-logger.level = Logger::MAX_LEVEL
- 
+# logger.level = Logger::MAX_LEVEL
+
 # Run migrations before warming the cache
 # before "symfony:cache:warmup", "symfony:doctrine:migrations:migrate"
- 
-# Custom(ised) tasks
- namespace :deploy do
-	# Apache needs to be restarted to make sure that the APC cache is cleared.
-	# This overwrites the :restart task in the parent config which is empty.
-	desc "Restart Apache"
-	task :restart, :except => { :no_release => true }, :roles => :app do
-#		run "sudo service apache2 restart"
-#		puts "--> Apache successfully restarted".green
-		run "ant install-dev"
-		puts "new version deployed".green
-	end
- end
+
+# Custom tasks
+namespace :deploy do
+  task :install_app, :roles => :web do
+    run "cd #{ current_path } && ant install-dev" # go to current deployed application path and run some script
+  end
+end
+
+after "deploy", "deploy:install_app"
