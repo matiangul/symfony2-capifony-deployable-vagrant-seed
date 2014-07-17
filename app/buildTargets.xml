@@ -26,6 +26,9 @@
         <exec executable="/bin/bash" dir="${basedir}" failonerror="true">
             <arg line="setFilePermissions.sh www-data" />
         </exec>
+        <exec executable="/bin/bash" dir="${basedir}" failonerror="true">
+            <arg line="setFilePermissions.sh vagrant" />
+        </exec>
     </target>
     <!-- END: PERMISSIONS -->
 

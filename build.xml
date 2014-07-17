@@ -18,6 +18,7 @@
 
  <target name="refresh" description="Must be run every time production environment is changed" depends="cache-clear,assets,clean"/>
 
- <!-- <target name="tests" description="Run tests" depends="phpunit, testjs, behat"/>
- <target name="metrics" description="Run tests" depends="phpunit-with-coverage, sonar, behat-ac"/> -->
+ <target name="tests" description="Run tests" depends="phpunit, testjs, behat"/>
+
+ <!-- <target name="metrics" description="Run tests" depends="phpunit-with-coverage, sonar, behat-ac"/> -->
 </project>
